@@ -45,7 +45,7 @@ def convolution(arr: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     assert in_width >= k_width
     assert channels == 3
 
-    padded_arr = pad_zeros(arr, r_height, r_width)
+    padded_arr = pad_array(arr, r_height, r_width)
     output = np.zeros((in_height, in_width, channels))
 
     for c in range(channels):
@@ -62,8 +62,8 @@ def convolution(arr: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     return output
 
 
-def pad_zeros(arr: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
-    return np.pad(arr, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'constant')
+def pad_array(arr: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
+    return np.pad(arr, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'edge')
 
 
 def double_brightness(val: np.uint8):
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     # b = np.flip(a, axis=1)
 
     # Padding
-    # b = pad_zeros(a, 2, 2)
+    # b = pad_array(a, 2, 2)
 
     # Convolution
     # b = convolution(a, box_blur(3))

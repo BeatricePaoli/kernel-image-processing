@@ -34,7 +34,7 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
     r_height = np.floor(k_height / 2).astype(int)
     r_width = np.floor(k_width / 2).astype(int)
 
-    padded_arr = pad_zeros(arr, r_height, r_width)
+    padded_arr = pad_array(arr, r_height, r_width)
 
     savedir = mkdtemp()
     padded_arr_path = os.path.join(savedir, 'padded_arr.joblib')
@@ -117,8 +117,8 @@ def convolve_pixel(padded_arr_path: str, kernel: np.ndarray, in_height: int, in_
     return output
 
 
-def pad_zeros(arr: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
-    return np.pad(arr, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'constant')
+def pad_array(arr: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
+    return np.pad(arr, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'edge')
 
 
 if __name__ == '__main__':
