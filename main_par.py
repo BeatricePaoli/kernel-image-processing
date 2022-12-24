@@ -35,13 +35,13 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
     padded_arr = pad_zeros(arr, r_height, r_width)
 
     # ------------------------ Metodo 1 ------------------------------
-    slice_height = np.ceil(in_height / cores).astype(int)
-    # n_slices = cores
-    n_slices = np.round(cores / 2).astype(int)
-    if n_slices < 1:
-        n_slices = 1
+    slice_height = np.ceil(in_height / (cores * 2)).astype(int)
+    n_slices = cores
 
-    assert n_slices > 0
+    # slice_height = np.ceil(in_height / cores).astype(int)
+    # n_slices = np.round(cores / 2).astype(int)
+    # if n_slices < 1:
+    #     n_slices = 1
 
     output_slices = Parallel(n_jobs=n_slices)(delayed(convolve_pixel)
                                               (padded_arr, kernel, in_height, in_width, channels, y, y + slice_height,
