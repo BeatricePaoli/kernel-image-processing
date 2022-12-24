@@ -34,6 +34,7 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
 
     padded_arr = pad_zeros(arr, r_height, r_width)
 
+    # ------------------------ Metodo 1 ------------------------------
     slice_height = np.ceil(in_height / cores).astype(int)
     # n_slices = cores
     n_slices = np.round(cores / 2).astype(int)
@@ -51,6 +52,31 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
     for i in range(1, len(output_slices)):
         if output_slices[i] is not None:
             output = np.vstack((output, output_slices[i]))
+
+    # ------------------------ Metodo 2 ------------------------------
+    # slice_height = np.ceil(in_height / cores).astype(int)
+    # slice_width = np.ceil(in_width / cores).astype(int)
+    # start_coords = []
+    # for y in range(0, in_height, slice_height):
+    #     for x in range(0, in_width, slice_width):
+    #         start_coords.append((x, y))
+    #
+    # output_slices = Parallel(n_jobs=cores)(delayed(convolve_pixel)
+    #                                        (padded_arr, kernel, in_height, in_width, channels, y, y + slice_height,
+    #                                         x, x + slice_width)
+    #                                        for x, y in start_coords)
+    #
+    # rows = []
+    # for y in range(cores):
+    #     row = output_slices[y * cores]
+    #     for x in range(1, cores):
+    #         if output_slices[x + y * cores] is not None:
+    #             row = np.hstack((row, output_slices[x + y * cores]))
+    #     rows.append(row)
+    #
+    # output = rows[0].copy()
+    # for y in range(1, len(rows)):
+    #     output = np.vstack((output, rows[y]))
 
     output = (np.rint(output)).astype(np.uint8)
     return output
@@ -92,8 +118,8 @@ if __name__ == '__main__':
     b = None
 
     # Convolution
-    n_rep = 1
-    for p in range(5):  # 5
+    n_rep = 3
+    for p in range(5):
         processes = 2 ** p
         start_time = timeit.default_timer()
         for n in range(n_rep):
