@@ -14,12 +14,12 @@ def crop(arr: np.ndarray) -> np.ndarray:
     return out
 
 
-def box_blur(width) -> np.ndarray:
+def box_blur(width: int) -> np.ndarray:
     assert width % 2 == 1
     return np.ones((width, width)) / 9
 
 
-def gaussian_blur(width, std_dev) -> np.ndarray:
+def gaussian_blur(width: int, std_dev: float) -> np.ndarray:
     assert width % 2 == 1
     output = np.zeros((width, width))
     out_sum = 0.0
@@ -40,6 +40,11 @@ def convolution(arr: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     k_height, k_width = kernel.shape
     r_height = np.floor(k_height / 2).astype(int)
     r_width = np.floor(k_width / 2).astype(int)
+
+    assert in_height >= k_height
+    assert in_width >= k_width
+    assert channels == 3
+
     padded_arr = pad_zeros(arr, r_height, r_width)
     output = np.zeros((in_height, in_width, channels))
 
@@ -57,11 +62,11 @@ def convolution(arr: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     return output
 
 
-def pad_zeros(arr, pad_w, pad_h) -> np.ndarray:
+def pad_zeros(arr: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
     return np.pad(arr, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'constant')
 
 
-def double_brightness(val):
+def double_brightness(val: np.uint8):
     out = val * 2
     if out > 255:
         return np.uint8(255)
@@ -116,10 +121,3 @@ if __name__ == '__main__':
     res = Image.fromarray(b)
     # res = Image.fromarray(b, 'HSV').convert('RGB')
     res.save('./res.jpg', 'jpeg')
-
-# Geometric transformations – flip, crop, rotate or translate images, and that is just the tip of the iceberg
-# Color space transformations – change RGB color channels, intensify any color
-# Kernel filters – sharpen or blur an image
-
-# TODO: check su shape di arr?
-# TODO: tipi parametri

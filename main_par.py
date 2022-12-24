@@ -6,7 +6,7 @@ from tempfile import mkdtemp
 import os
 
 
-def gaussian_blur(width, std_dev) -> np.ndarray:
+def gaussian_blur(width: int, std_dev: float) -> np.ndarray:
     assert width % 2 == 1
     output = np.zeros((width, width))
     out_sum = 0.0
@@ -117,7 +117,7 @@ def convolve_pixel(padded_arr_path: str, kernel: np.ndarray, in_height: int, in_
     return output
 
 
-def pad_zeros(arr, pad_w, pad_h) -> np.ndarray:
+def pad_zeros(arr: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
     return np.pad(arr, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'constant')
 
 
