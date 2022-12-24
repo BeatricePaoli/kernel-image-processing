@@ -26,7 +26,7 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
 
     assert in_height >= k_height
     assert in_width >= k_width
-    assert channels == 1 or channels == 3
+    assert channels == 3
     assert cores > 0
 
     r_height = np.floor(k_height / 2).astype(int)
