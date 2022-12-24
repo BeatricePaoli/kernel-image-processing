@@ -40,14 +40,8 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
     padded_arr_path = os.path.join(savedir, 'padded_arr.joblib')
     dump(padded_arr, padded_arr_path, compress=True)
 
-    # ------------------------ Metodo 1 ------------------------------
-    slice_height = np.ceil(in_height / (cores * 2)).astype(int)
+    slice_height = np.ceil(in_height / cores).astype(int)
     n_slices = cores
-
-    # slice_height = np.ceil(in_height / cores).astype(int)
-    # n_slices = np.round(cores / 2).astype(int)
-    # if n_slices < 1:
-    #     n_slices = 1
 
     output_slices = Parallel(n_jobs=n_slices)(delayed(convolve_pixel)
                                               (padded_arr_path, kernel, in_height, in_width, channels, y,
@@ -58,31 +52,6 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
     for i in range(1, len(output_slices)):
         if output_slices[i] is not None:
             output = np.vstack((output, output_slices[i]))
-
-    # ------------------------ Metodo 2 ------------------------------
-    # slice_height = np.ceil(in_height / cores).astype(int)
-    # slice_width = np.ceil(in_width / cores).astype(int)
-    # start_coords = []
-    # for y in range(0, in_height, slice_height):
-    #     for x in range(0, in_width, slice_width):
-    #         start_coords.append((x, y))
-    #
-    # output_slices = Parallel(n_jobs=cores)(delayed(convolve_pixel)
-    #                                        (padded_arr_path, kernel, in_height, in_width, channels, y, y + slice_height,
-    #                                         x, x + slice_width)
-    #                                        for x, y in start_coords)
-    #
-    # rows = []
-    # for y in range(cores):
-    #     row = output_slices[y * cores]
-    #     for x in range(1, cores):
-    #         if output_slices[x + y * cores] is not None:
-    #             row = np.hstack((row, output_slices[x + y * cores]))
-    #     rows.append(row)
-    #
-    # output = rows[0].copy()
-    # for y in range(1, len(rows)):
-    #     output = np.vstack((output, rows[y]))
 
     os.remove(padded_arr_path)
 
