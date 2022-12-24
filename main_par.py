@@ -97,14 +97,18 @@ if __name__ == '__main__':
     b = None
 
     # Convolution
-    n_rep = 3
+    n_rep = 1
+    times = []
     for p in range(5):
         processes = 2 ** p
         start_time = timeit.default_timer()
         for n in range(n_rep):
             b = convolution(a, gaussian_blur(9, 3), processes)
         end_time = timeit.default_timer()
-        print("Time (s):", (end_time - start_time) / n_rep, ", Processes:", processes)
+        time = (end_time - start_time) / n_rep
+        times.append((processes, time))
+        print("Time (s):", time, ", Processes:", processes)
 
+    print("Process-Times:", times)
     res = Image.fromarray(b)
     res.save('./res.jpg', 'jpeg')
