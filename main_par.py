@@ -1,7 +1,9 @@
 from PIL import Image
 import numpy as np
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, dump, load
 import timeit
+from tempfile import mkdtemp
+import os
 
 
 def gaussian_blur(width, std_dev) -> np.ndarray:
@@ -34,6 +36,10 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
 
     padded_arr = pad_zeros(arr, r_height, r_width)
 
+    savedir = mkdtemp()
+    padded_arr_path = os.path.join(savedir, 'padded_arr.joblib')
+    dump(padded_arr, padded_arr_path, compress=True)
+
     # ------------------------ Metodo 1 ------------------------------
     slice_height = np.ceil(in_height / (cores * 2)).astype(int)
     n_slices = cores
@@ -44,8 +50,8 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
     #     n_slices = 1
 
     output_slices = Parallel(n_jobs=n_slices)(delayed(convolve_pixel)
-                                              (padded_arr, kernel, in_height, in_width, channels, y, y + slice_height,
-                                               0, in_width)
+                                              (padded_arr_path, kernel, in_height, in_width, channels, y,
+                                               y + slice_height, 0, in_width)
                                               for y in range(0, in_height, slice_height))
 
     output = output_slices[0]
@@ -62,7 +68,7 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
     #         start_coords.append((x, y))
     #
     # output_slices = Parallel(n_jobs=cores)(delayed(convolve_pixel)
-    #                                        (padded_arr, kernel, in_height, in_width, channels, y, y + slice_height,
+    #                                        (padded_arr_path, kernel, in_height, in_width, channels, y, y + slice_height,
     #                                         x, x + slice_width)
     #                                        for x, y in start_coords)
     #
@@ -78,11 +84,13 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
     # for y in range(1, len(rows)):
     #     output = np.vstack((output, rows[y]))
 
+    os.remove(padded_arr_path)
+
     output = (np.rint(output)).astype(np.uint8)
     return output
 
 
-def convolve_pixel(padded_arr: np.ndarray, kernel: np.ndarray, in_height: int, in_width: int, channels: int,
+def convolve_pixel(padded_arr_path: str, kernel: np.ndarray, in_height: int, in_width: int, channels: int,
                    start_y: int, end_y: int, start_x: int, end_x: int) -> np.ndarray | None:
     start_x = start_x if start_x > -1 else 0
     start_y = start_y if start_y > -1 else 0
@@ -91,6 +99,8 @@ def convolve_pixel(padded_arr: np.ndarray, kernel: np.ndarray, in_height: int, i
 
     if start_x >= in_width or start_y >= in_height or end_x <= 0 or end_y <= 0:
         return None
+
+    padded_arr = load(padded_arr_path)
 
     k_height, k_width = kernel.shape
     output = np.zeros((end_y - start_y, end_x - start_x, channels))
