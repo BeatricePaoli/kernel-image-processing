@@ -1,0 +1,357 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+\usepackage{cvpr}
+\usepackage{times}
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\usepackage{url}
+
+% Include other packages here, before hyperref.
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{xcolor}
+
+% If you comment hyperref and then uncomment it, you should delete
+% egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
+% run, let it finish, and you should be clear).
+%\usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
+
+\cvprfinalcopy % *** Uncomment this line for the final submission
+
+\def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
+\def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
+
+% Pages are numbered in submission mode, and unnumbered in camera-ready
+\ifcvprfinal\pagestyle{empty}\fi
+\begin{document}
+
+%%%%%%%%% TITLE
+\title{Kernel Image Processing: comparison between a sequential and parallel implementation}
+
+\author{Beatrice Paoli\\
+{\tt\small beatrice.paoli@stud.unifi.it}
+}
+
+\maketitle
+\thispagestyle{empty}
+
+%%%%%%%%% ABSTRACT
+\begin{abstract}
+	The purpose of this paper is to implement the algorithm for kernel convolution to perform various types of image processing. The goal is to implement both a sequential and a parallel version and to perform a performance analysis of the two versions in terms of execution times and speedup and to see how this values change with different inputs (image size and kernel size). The implementations are done in Python and the parallel version uses the Joblib package.
+\end{abstract}
+
+%-------------------------------------------------------------------------
+
+\section{Introduction on Kernel Convolution}
+
+Kernel Convolution is a basic operation used in image processing to enhance or extract useful information from an image (for example, for blurring, sharpening or perform edge detection).
+
+In general, \textit{convolution} is a mathematical operation performed on two functions $f(t)$ and $g(t)$ to produce as a result a function that expresses how the shape of $f(t)$ is altered by $h(t)$. In the continous domain, it is the integral of the product between the first and the second function translated by a certain value.
+
+\[(f*g)(t) = \int_{-\infty}^{\infty}f(\tau)g(t - \tau)d\tau\]
+
+In image processing, a different definition for discreet and bidimensional values is used.
+
+\begin{equation*}\begin{split} g(x, y) & = \omega * f(x, y) \\ & = \sum_{dx = -a}^{a}\sum_{dy = -b}^{b}\omega(dx, dy)f(x - dx, y - dy)\end{split}\end{equation*}
+
+where $f$ is the input image (with one channel pixels), $\omega$ is the \textit{kernel} (or \textit{mask}), $g$ is the output image, the ranges $-a \leq dx \leq a$ and $-b \leq dy \leq b$ are the elements of the kernel used.
+
+The output $g$ of the convolution will have a smaller size than the input: if $f$ has size $W \times H$ and $\omega$ has size $n \times n$ the output will have size $(W - n + 1) \times (H - n + 1)$ because the pixels on the edges contribute less on the convolution. 
+
+To solve this problem, we need to apply a \textit{padding} to the input image borders in order to preserve the output size. There are multiple type of paddings that can be used to add these pixels: 
+
+\begin{itemize}
+	\item \textbf{Constant pixels}: a constant pre-defined value for the pixels is used (like 0).
+	\item \textbf{Pixel replication}: the border pixel is replicated for the padding.
+	\item \textbf{Pixel reflection}: the padding pixels mirror the image from the edge.
+	\item \textbf{Pixel wrapping}: the padding pixels are taken from the opposite edge, as to wrap the image.
+\end{itemize} 
+
+\section{Implementation}
+
+The implementation is done in Python and uses the \textit{Pillow} package to load and save images in RGB format, and the \textit{numpy} package for handling arrays. 
+
+The application first loads the image and converts it into a numpy array of shape (height, width, channels).
+
+After that, a gaussian kernel to use for the convolution is generated: a function that takes as parameters the width and the standard deviation, generates a matrix by using the following formula for each value.
+
+\[G(x, y) = \frac{1}{2\pi\sigma^2}e^{\frac{(x^2 + y^2)}{2\sigma^2}}\]
+
+where $x$ and $y$ are the distances of each kernel value from the center of the kernel (also called the \textit{origin}). After that, each value is divided by the sum of all kernel values in order to have a weighted average.
+The convolution with this type of kernel is used to \textit{blur} the input image.
+
+The pseudo-code of the convolution function is the following:
+
+\begin{algorithm}[H]
+	\label{alg:convolution}
+	\caption{Convolution}
+	\begin{algorithmic}
+		\Require input image, kernel
+		\vspace{0.5cm}
+		
+		\State Pad input image
+		\For{each channel in input image}
+		\For{each row in input image}
+		\For{each column in input image}
+		\State o $\leftarrow$ 0
+		\For{each row in kernel}
+		\For{each column in kernel}
+		\State o $\leftarrow$ o + kernel pixel * image pixel
+		\EndFor
+		\EndFor
+		\State output pixel $\leftarrow$ o
+		\EndFor
+		\EndFor
+		\EndFor
+		\State \Return output image
+		
+	\end{algorithmic}
+\end{algorithm}
+
+The image is padded by replicating the border pixels and is done by using the numpy function \verb"pad".
+
+After the convolution, the output array is converted to an image and saved on a file. 
+
+\section{Parallelization}
+
+During the kernel convolution process, each output pixel depends on some pixels of the input image and the kernel. These values are only read, the only writes performed are the output pixels' values and they are independent from each other. 
+
+Therefore, this is an embarassingly parallel problem: each output pixel can be computed by a thread without the need of any synchronization between threads.
+
+The Python interpreter is based on the \textit{Global Interpreter Lock} (GIL), which prevents the execution of multiple threads. To bypass this problem and achieve parallelization, we need to use processes instead of threads.
+Each process will have its own interpreter (including its own GIL) and  memory, so their instantiation has a greater overhead compared to threads.
+
+For this implementation, the \textit{Joblib} library was used. It is a high level library that allows to parallelize computation through the use of a backend library (\textit{multiprocessing} or \textit{loki}) in a transparent way.
+
+While tecnically each output pixel could be computed independently, it isn't convenient to spawn too many processess, nor to fraction a process job in too many parts. 
+
+Therefore the image is split in a number of sub-images equal to the number of processes to use. So each process computes only an output slice of the total output. The split and join is performed by the main process.
+
+Each processes needs in input the padded image (computed by the main process), the kernel, the indices of the output sub-image to compute and the shape of the original image (used to performs some checks).
+
+However the numpy array that represents the padded image is very big and can result to a very slow instantiation of the process due to the copy of this array. To avoid this problem, and reduce the execution times we can use the \verb"joblib.dump()" and \verb"joblib.load()" functions to save and reload the numpy array efficiently. 
+
+The main process saves the array on disk and deletes it at the end of the function, while each process loads the file to perform the convolution.
+
+To recap, the main process:
+
+\begin{enumerate}
+	\item Creates the padded array from the input.
+	\item Saves the padded array on disk in a compressed format.
+	\item Splits the original image in sub-images.
+	\item Instantiates the sub-processes with the \verb"Parallel" class, each with their own parameters.
+	\item After all sub-processess terminate, the output image is built from the returned slices.
+\end{enumerate}
+
+While, the work performed by each process is described in the following pseudo-code:
+
+\begin{algorithm}[H]
+	\label{alg:convolution_slice}
+	\caption{Convolution of an image slice}
+	\begin{algorithmic}
+		\Require input image path, kernel, input image shape, sub-image indices
+		\vspace{0.5cm}
+		
+		\If{sub-image indices are \textbf{not} valid}
+		\State \Return None
+		\Else
+		\State Load the padded image from file
+		\For{each channel in sub-image}
+		\For{each row in sub-image}
+		\For{each column in sub-image}
+		\State o $\leftarrow$ 0
+		\For{each row in kernel}
+		\For{each column in kernel}
+		\State o $\leftarrow$ o + kernel pixel * image pixel
+		\EndFor
+		\EndFor
+		\State output sub-image pixel $\leftarrow$ o
+		\EndFor
+		\EndFor
+		\EndFor
+		\State \Return output sub-image
+		\EndIf
+		
+	\end{algorithmic}
+\end{algorithm}
+
+\section{Performance Analysis}
+%In order to compare the performance of a sequential algorithm with its parallel version we can use the concept of \textit{speedup}.
+%
+%Speedup is measured as the ratio between the execution time of the sequential algorithm and the parallel one.
+%
+%\[S = \frac{t_s}{t_p}\]
+%
+%Ideally, we should look for \textit{perfect speedup} or even \textit{linear speedup}, meaning $S$ should be equal or similar to the number of processors used to perform the parallel algorithm.
+%
+%The experiments were performed on a Intel Core i7-1165G7 with 8 logical cores, with 2D input datasets generated with \textit{scikit-learn} in Python.
+%
+%Since the algorithm has the hyperparameter $K$ for the number of clusters, different experiments were performed with varying $K$ and fixed $N$ (number of points), and viceversa.
+%
+%%\begin{figure}[H]
+%%	\includegraphics[width=\linewidth]{images/speedup_by_k.png}
+%%	\caption{Speedup K Means Clustering con N = 100000.}
+%%	\label{fig:speedup_k}
+%%\end{figure}
+%
+%\begin{table}[H]
+%	\begin{center}
+%		\begin{tabular}{|c|c|c|}
+%			\hline
+%			Threads & Execution Time (s) & Speedup \\
+%			\hline
+%			1 & 0.213 & 1 \\ 
+%			2 & 0.194 & 1.101 \\
+%			4 & 0.173 & 1.232 \\
+%			8 & 0.150 & 1.422 \\ 
+%			16 & 0.203 & 1.052 \\
+%			\hline
+%		\end{tabular}
+%	\end{center}
+%	\caption{Execution Times for K = 10 and N = 100000.}
+%	\label{tab:speedup_k_n_1}
+%\end{table}
+%
+%\begin{table}[H]
+%	\begin{center}
+%		\begin{tabular}{|c|c|c|}
+%			\hline
+%			Threads & Execution Time (s) & Speedup \\
+%			\hline
+%			1 & 1.458 & 1 \\ 
+%			2 & 0.970 & 1.504 \\
+%			4 & 0.704 & 2.071 \\
+%			8 & 0.473 & 3.082 \\ 
+%			16 & 0.498 & 2.929 \\
+%			\hline
+%		\end{tabular}
+%	\end{center}
+%	\caption{Execution Times for K = 100 and N = 100000.}
+%	\label{tab:speedup_k_n_2}
+%\end{table}
+%
+%\begin{table}[H]
+%	\begin{center}
+%		\begin{tabular}{|c|c|c|}
+%			\hline
+%			Threads & Execution Time (s) & Speedup \\
+%			\hline
+%			1 & 12.106 & 1 \\ 
+%			2 & 7.860 & 1.540 \\
+%			4 & 5.259 & 2.302 \\
+%			8 & 4.335 & 2.792 \\ 
+%			16 & 4.498 & 2.691 \\
+%			\hline
+%		\end{tabular}
+%	\end{center}
+%	\caption{Execution Times for K = 1000 and N = 100000.}
+%	\label{tab:speedup_k_n_3}
+%\end{table}
+%
+%\begin{table}[H]
+%	\begin{center}
+%		\begin{tabular}{|c|c|c|}
+%			\hline
+%			Threads & Execution Time (s) & Speedup \\
+%			\hline
+%			1 & 126.525 & 1 \\ 
+%			2 & 85.591 & 1.478 \\
+%			4 & 69.055 & 1.832 \\
+%			8 & 65.570 & 1.930 \\ 
+%			16 & 68.286 & 1.853 \\
+%			\hline
+%		\end{tabular}
+%	\end{center}
+%	\caption{Execution Times for K = 10000 and N = 100000.}
+%	\label{tab:speedup_k_n_4}
+%\end{table}
+%
+%In Figure \ref{fig:speedup_k} we have the different speedups for different numbers of threads used and different values of $K$. We can see how the speedup increases up to 8 threads as expected, but in a sub-linear way.
+%The results also depend on the value of $K$ chosen. 
+%
+%For small $K$, the speedup are significantly worse and deteriorate almost to 1 for a high number of threads. Since the work of each thread consists mainly on computing all the distances between a point and all centroids to find the closest cluster, so for small numbers of $K$ the computation of each thread can become too little and the gain in speedup is lost due to thread management.
+%
+%\begin{figure}[H]
+%	\includegraphics[width=\linewidth]{images/speedup_by kernel_size.png}
+%	\caption{Speedup K Means Clustering con K = 1000.}
+%	\label{fig:speedup_n}
+%\end{figure}
+%
+%\begin{table}[H]
+%	\begin{center}
+%		\begin{tabular}{|c|c|c|}
+%			\hline
+%			Threads & Execution Time (s) & Speedup \\
+%			\hline
+%			1 & 0.610 & 1 \\ 
+%			2 & 0.449 & 1.358 \\
+%			4 & 0.347 & 1.759 \\
+%			8 & 0.249 & 2.450 \\ 
+%			16 & 0.242 & 2.524 \\
+%			\hline
+%		\end{tabular}
+%	\end{center}
+%	\caption{Execution Times for K = 1000 and N = 5000.}
+%	\label{tab:speedup_k_n_5}
+%\end{table}
+%
+%\begin{table}[H]
+%	\begin{center}
+%		\begin{tabular}{|c|c|c|}
+%			\hline
+%			Threads & Execution Time (s) & Speedup \\
+%			\hline
+%			1 & 1.293 & 1 \\ 
+%			2 & 0.827 & 1.565 \\
+%			4 & 0.661 & 1.955 \\
+%			8 & 0.512 & 2.525 \\ 
+%			16 & 0.497 & 2.602 \\
+%			\hline
+%		\end{tabular}
+%	\end{center}
+%	\caption{Execution Times for K = 1000 and N = 10000.}
+%	\label{tab:speedup_k_n_6}
+%\end{table}
+%
+%\begin{table}[H]
+%	\begin{center}
+%		\begin{tabular}{|c|c|c|}
+%			\hline
+%			Threads & Execution Time (s) & Speedup \\
+%			\hline
+%			1 & 38.045 & 1 \\ 
+%			2 & 24.122 & 1.577 \\
+%			4 & 17.152 & 2.218 \\
+%			8 & 14.315 & 2.658 \\ 
+%			16 & 14.824 & 2.567 \\
+%			\hline
+%		\end{tabular}
+%	\end{center}
+%	\caption{Execution Times for K = 1000 and N = 300000.}
+%	\label{tab:speedup_k_n_7}
+%\end{table}
+%
+%\begin{table}[H]
+%	\begin{center}
+%		\begin{tabular}{|c|c|c|}
+%			\hline
+%			Threads & Execution Time (s) & Speedup \\
+%			\hline
+%			1 & 63.696 & 1 \\ 
+%			2 & 45.375 & 1.404 \\
+%			4 & 35.962 & 1.771 \\
+%			8 & 32.577 & 1.955 \\ 
+%			16 & 32.705 & 1.948 \\
+%			\hline
+%		\end{tabular}
+%	\end{center}
+%	\caption{Execution Times for K = 1000 and N = 500000.}
+%	\label{tab:speedup_k_n_8}
+%\end{table}
+%
+%In Figure \ref{fig:speedup_n} we have the speedup trends for different sizes $N$ of datasets. As before, the values increase up to 8 in a sub-linear way.
+
+\end{document}
