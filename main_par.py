@@ -22,8 +22,8 @@ def gaussian_blur(width: int, std_dev: float) -> np.ndarray:
     return output
 
 
-def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
-    in_height, in_width, channels = arr.shape
+def convolution(input: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
+    in_height, in_width, channels = input.shape
     k_height, k_width = kernel.shape
 
     assert in_height >= k_height
@@ -34,17 +34,17 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
     r_height = np.floor(k_height / 2).astype(int)
     r_width = np.floor(k_width / 2).astype(int)
 
-    padded_arr = pad_array(arr, r_height, r_width)
+    padded_input = pad_array(input, r_height, r_width)
 
     savedir = mkdtemp()
-    padded_arr_path = os.path.join(savedir, 'padded_arr.joblib')
-    dump(padded_arr, padded_arr_path, compress=True)
+    padded_input_path = os.path.join(savedir, 'padded_input.joblib')
+    dump(padded_input, padded_input_path, compress=True)
 
     slice_height = np.ceil(in_height / cores).astype(int)
     n_slices = cores
 
-    output_slices = Parallel(n_jobs=n_slices)(delayed(convolve_pixel)
-                                              (padded_arr_path, kernel, in_height, in_width, channels, y,
+    output_slices = Parallel(n_jobs=n_slices)(delayed(convolve_slice)
+                                              (padded_input_path, kernel, in_height, in_width, channels, y,
                                                y + slice_height, 0, in_width)
                                               for y in range(0, in_height, slice_height))
 
@@ -53,13 +53,13 @@ def convolution(arr: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
         if output_slices[i] is not None:
             output = np.vstack((output, output_slices[i]))
 
-    os.remove(padded_arr_path)
+    os.remove(padded_input_path)
 
     output = (np.rint(output)).astype(np.uint8)
     return output
 
 
-def convolve_pixel(padded_arr_path: str, kernel: np.ndarray, in_height: int, in_width: int, channels: int,
+def convolve_slice(padded_input_path: str, kernel: np.ndarray, in_height: int, in_width: int, channels: int,
                    start_y: int, end_y: int, start_x: int, end_x: int) -> np.ndarray | None:
     start_x = start_x if start_x > -1 else 0
     start_y = start_y if start_y > -1 else 0
@@ -69,7 +69,7 @@ def convolve_pixel(padded_arr_path: str, kernel: np.ndarray, in_height: int, in_
     if start_x >= in_width or start_y >= in_height or end_x <= 0 or end_y <= 0:
         return None
 
-    padded_arr = load(padded_arr_path)
+    padded_input = load(padded_input_path)
 
     k_height, k_width = kernel.shape
     output = np.zeros((end_y - start_y, end_x - start_x, channels))
@@ -79,22 +79,22 @@ def convolve_pixel(padded_arr_path: str, kernel: np.ndarray, in_height: int, in_
                 o = 0.0
                 for ik in range(k_height):
                     for jk in range(k_width):
-                        o += kernel[ik, jk] * padded_arr[i + ik, j + jk, c]
+                        o += kernel[ik, jk] * padded_input[i + ik, j + jk, c]
                 if o > 255:
                     o = np.uint8(255)
                 output[i - start_y, j - start_x, c] = o
     return output
 
 
-def pad_array(arr: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
-    return np.pad(arr, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'edge')
+def pad_array(array: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
+    return np.pad(array, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'edge')
 
 
 if __name__ == '__main__':
     img = Image.open(r"./test.jpg")
 
-    a = np.asarray(img)
-    b = None
+    input_img = np.asarray(img)
+    output_img = None
 
     # Convolution
     n_rep = 1
@@ -103,12 +103,12 @@ if __name__ == '__main__':
         processes = 2 ** p
         start_time = timeit.default_timer()
         for n in range(n_rep):
-            b = convolution(a, gaussian_blur(9, 3), processes)
+            output_img = convolution(input_img, gaussian_blur(9, 3), processes)
         end_time = timeit.default_timer()
         time = (end_time - start_time) / n_rep
         times.append((processes, time))
         print("Time (s):", time, ", Processes:", processes)
 
     print("Process-Times:", times)
-    res = Image.fromarray(b)
-    res.save('./res.jpg', 'jpeg')
+    out_img = Image.fromarray(output_img)
+    out_img.save('./res.jpg', 'jpeg')

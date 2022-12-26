@@ -4,13 +4,13 @@ import numpy as np
 import timeit
 
 
-def crop(arr: np.ndarray) -> np.ndarray:
-    height, width, channels = arr.shape
+def crop(array: np.ndarray) -> np.ndarray:
+    height, width, channels = array.shape
     out_height = random.randint(1, height)
     out_width = random.randint(1, width)
     y = random.randrange(0, height - out_height)
     x = random.randrange(0, width - out_width)
-    out = arr[y: y + out_height, x: x + out_width, :]
+    out = array[y: y + out_height, x: x + out_width, :]
     return out
 
 
@@ -35,8 +35,8 @@ def gaussian_blur(width: int, std_dev: float) -> np.ndarray:
     return output
 
 
-def convolution(arr: np.ndarray, kernel: np.ndarray) -> np.ndarray:
-    in_height, in_width, channels = arr.shape
+def convolution(input: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    in_height, in_width, channels = input.shape
     k_height, k_width = kernel.shape
     r_height = np.floor(k_height / 2).astype(int)
     r_width = np.floor(k_width / 2).astype(int)
@@ -45,7 +45,7 @@ def convolution(arr: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     assert in_width >= k_width
     assert channels == 3
 
-    padded_arr = pad_array(arr, r_height, r_width)
+    padded_input = pad_array(input, r_height, r_width)
     output = np.zeros((in_height, in_width, channels))
 
     for c in range(channels):
@@ -54,7 +54,7 @@ def convolution(arr: np.ndarray, kernel: np.ndarray) -> np.ndarray:
                 o = 0.0
                 for ik in range(k_height):
                     for jk in range(k_width):
-                        o += kernel[ik, jk] * padded_arr[i + ik, j + jk, c]
+                        o += kernel[ik, jk] * padded_input[i + ik, j + jk, c]
                 if o > 255:
                     o = np.uint8(255)
                 output[i, j, c] = o
@@ -62,8 +62,8 @@ def convolution(arr: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     return output
 
 
-def pad_array(arr: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
-    return np.pad(arr, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'edge')
+def pad_array(array: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
+    return np.pad(array, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'edge')
 
 
 def double_brightness(val: np.uint8):
@@ -77,47 +77,47 @@ if __name__ == '__main__':
     img = Image.open(r"./test.jpg")
     # img_hsv = img.convert('HSV')
 
-    # a = np.asarray(img_hsv)
-    a = np.asarray(img)
+    # input_img = np.asarray(img_hsv)
+    input_img = np.asarray(img)
 
-    # print(a)
-    # print(a.shape)
+    # print(input_img)
+    # print(input_img.shape)
 
     # Brightness
-    # b = np.floor_divide(a, 2)
-    # b = np.vectorize(double_brightness)(a)
+    # output_img = np.floor_divide(input_img, 2)
+    # output_img = np.vectorize(double_brightness)(input_img)
 
     # Hue Shift (HSV)
-    # b = a
-    # b[..., 0] = (b[..., 0] + 70) % 255
+    # output_img = input_img
+    # output_img[..., 0] = (output_img[..., 0] + 70) % 255
 
     # Grayscale
-    # b = np.dot(a[..., :3], [0.2989, 0.5870, 0.1140])
-    # b = b.astype(np.uint8)
+    # output_img = np.dot(input_img[..., :3], [0.2989, 0.5870, 0.1140])
+    # output_img = output_img.astype(np.uint8)
 
     # Flip
-    # b = np.flip(a, axis=0)
-    # b = np.flip(a, axis=1)
+    # output_img = np.flip(input_img, axis=0)
+    # output_img = np.flip(input_img, axis=1)
 
     # Padding
-    # b = pad_array(a, 2, 2)
+    # output_img = pad_array(input_img, 2, 2)
 
     # Convolution
-    # b = convolution(a, box_blur(3))
+    # output_img = convolution(input_img, box_blur(3))
     start_time = timeit.default_timer()
-    b = convolution(a, gaussian_blur(9, 3))
+    output_img = convolution(input_img, gaussian_blur(9, 3))
     end_time = timeit.default_timer()
     print("Time (s): ", end_time - start_time)
 
     # Crop
-    # b = crop(a)
+    # output_img = crop(input_img)
 
     # Rotation
-    # b = np.rot90(a, -1, (0, 1))
+    # output_img = np.rot90(input_img, -1, (0, 1))
 
-    # print(b)
-    # print(b.shape)
+    # print(output_img)
+    # print(output_img.shape)
 
-    res = Image.fromarray(b)
-    # res = Image.fromarray(b, 'HSV').convert('RGB')
-    res.save('./res.jpg', 'jpeg')
+    out_img = Image.fromarray(output_img)
+    # res = Image.fromarray(output_img, 'HSV').convert('RGB')
+    out_img.save('./res.jpg', 'jpeg')
