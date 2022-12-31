@@ -4,20 +4,20 @@ import numpy as np
 import timeit
 
 
-def crop(array: np.ndarray) -> np.ndarray:
-    height, width, channels = array.shape
-    out_height = random.randint(1, height)
-    out_width = random.randint(1, width)
-    y = random.randrange(0, height - out_height)
-    x = random.randrange(0, width - out_width)
-    out = array[y: y + out_height, x: x + out_width, :]
-    return out
+# def crop(array: np.ndarray) -> np.ndarray:
+#     height, width, channels = array.shape
+#     out_height = random.randint(1, height)
+#     out_width = random.randint(1, width)
+#     y = random.randrange(0, height - out_height)
+#     x = random.randrange(0, width - out_width)
+#     out = array[y: y + out_height, x: x + out_width, :]
+#     return out
 
 
-def box_blur(width: int) -> np.ndarray:
-    assert width % 2 == 1
-    return np.ones((width, width)) / 9
-
+# def box_blur(width: int) -> np.ndarray:
+#     assert width % 2 == 1
+#     return np.ones((width, width)) / 9
+#
 
 def gaussian_blur(width: int, std_dev: float) -> np.ndarray:
     assert width % 2 == 1
@@ -66,11 +66,11 @@ def pad_array(array: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
     return np.pad(array, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'edge')
 
 
-def double_brightness(val: np.uint8):
-    out = val * 2
-    if out > 255:
-        return np.uint8(255)
-    return out
+# def double_brightness(val: np.uint8):
+#     out = val * 2
+#     if out > 255:
+#         return np.uint8(255)
+#     return out
 
 
 if __name__ == '__main__':
