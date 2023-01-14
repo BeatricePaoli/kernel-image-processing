@@ -22,14 +22,14 @@ def gaussian_blur(width: int, std_dev: float) -> np.ndarray:
     return output
 
 
-def convolution(input: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray:
+def convolution(input: np.ndarray, kernel: np.ndarray, proc: int) -> np.ndarray:
     in_height, in_width, channels = input.shape
     k_height, k_width = kernel.shape
 
     assert in_height >= k_height
     assert in_width >= k_width
     assert channels == 3
-    assert cores > 0
+    assert proc > 0
 
     r_height = np.floor(k_height / 2).astype(int)
     r_width = np.floor(k_width / 2).astype(int)
@@ -40,13 +40,12 @@ def convolution(input: np.ndarray, kernel: np.ndarray, cores: int) -> np.ndarray
     padded_input_path = os.path.join(savedir, 'padded_input.joblib')
     dump(padded_input, padded_input_path, compress=True)
 
-    slice_height = np.ceil(in_height / cores).astype(int)
-    n_slices = cores
+    slice_height = np.ceil(in_height / proc).astype(int)
 
-    output_slices = Parallel(n_jobs=n_slices)(delayed(convolve_slice)
-                                              (padded_input_path, kernel, in_height, in_width, channels, y,
-                                               y + slice_height, 0, in_width)
-                                              for y in range(0, in_height, slice_height))
+    output_slices = Parallel(n_jobs=proc)(delayed(convolve_slice)
+                                          (padded_input_path, kernel, in_height, in_width, channels, y,
+                                           y + slice_height, 0, in_width)
+                                          for y in range(0, in_height, slice_height))
 
     output = output_slices[0]
     for i in range(1, len(output_slices)):
