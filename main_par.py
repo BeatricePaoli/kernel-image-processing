@@ -90,12 +90,11 @@ def pad_array(array: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
 
 
 if __name__ == '__main__':
-    img = Image.open(r"./test.jpg")
+    img = Image.open(r"./input/test.jpg")
 
     input_img = np.asarray(img)
     output_img = None
 
-    # Convolution
     n_rep = 1
     times = []
     for p in range(5):
@@ -110,4 +109,4 @@ if __name__ == '__main__':
 
     print("Process-Times:", times)
     out_img = Image.fromarray(output_img)
-    out_img.save('./res.jpg', 'jpeg')
+    out_img.save('./output/res.jpg', 'jpeg')
