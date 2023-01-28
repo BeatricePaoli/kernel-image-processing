@@ -40,10 +40,4 @@ While each process performs the convolution for its image slice.
 
 ## Speedup Results
 
-Speedup results with a fixed test image of size 734x694 with varying kernel sizes.
-
-![speedup_k](paper/images/speedup_by_kernel_sizes.png)
-
-Speedup results with a fixed 7x7 kernel and input images of different sizes.
-
-![speedup_i](paper/images/speedup_by_img_sizes.png)
+![speedup_k](readme_images/speedup.png)
