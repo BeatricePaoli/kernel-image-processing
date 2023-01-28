@@ -4,7 +4,6 @@ import timeit
 
 
 def gaussian_blur(width: int, std_dev: float) -> np.ndarray:
-    assert width % 2 == 1
     output = np.zeros((width, width))
     out_sum = 0.0
     radius = np.floor(width / 2).astype(int)
@@ -25,11 +24,7 @@ def convolution(input: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     r_height = np.floor(k_height / 2).astype(int)
     r_width = np.floor(k_width / 2).astype(int)
 
-    assert in_height >= k_height
-    assert in_width >= k_width
-    assert channels == 3
-
-    padded_input = pad_array(input, r_height, r_width)
+    padded_input = np.pad(input, ((r_width, r_width), (r_height, r_height), (0, 0)), 'edge')
     output = np.zeros((in_height, in_width, channels))
 
     for c in range(channels):
@@ -44,10 +39,6 @@ def convolution(input: np.ndarray, kernel: np.ndarray) -> np.ndarray:
                 output[i, j, c] = o
     output = (np.rint(output)).astype(np.uint8)
     return output
-
-
-def pad_array(array: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
-    return np.pad(array, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'edge')
 
 
 if __name__ == '__main__':

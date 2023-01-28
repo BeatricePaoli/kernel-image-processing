@@ -7,7 +7,6 @@ import os
 
 
 def gaussian_blur(width: int, std_dev: float) -> np.ndarray:
-    assert width % 2 == 1
     output = np.zeros((width, width))
     out_sum = 0.0
     radius = np.floor(width / 2).astype(int)
@@ -26,15 +25,10 @@ def convolution(input: np.ndarray, kernel: np.ndarray, proc: int) -> np.ndarray:
     in_height, in_width, channels = input.shape
     k_height, k_width = kernel.shape
 
-    assert in_height >= k_height
-    assert in_width >= k_width
-    assert channels == 3
-    assert proc > 0
-
     r_height = np.floor(k_height / 2).astype(int)
     r_width = np.floor(k_width / 2).astype(int)
 
-    padded_input = pad_array(input, r_height, r_width)
+    padded_input = np.pad(input, ((r_width, r_width), (r_height, r_height), (0, 0)), 'edge')
 
     savedir = mkdtemp()
     padded_input_path = os.path.join(savedir, 'padded_input.joblib')
@@ -83,10 +77,6 @@ def convolve_slice(padded_input_path: str, kernel: np.ndarray, in_height: int, i
                     o = np.uint8(255)
                 output[i - start_y, j - start_x, c] = o
     return output
-
-
-def pad_array(array: np.ndarray, pad_w: int, pad_h: int) -> np.ndarray:
-    return np.pad(array, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)), 'edge')
 
 
 if __name__ == '__main__':
