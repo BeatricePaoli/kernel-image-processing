@@ -17,7 +17,7 @@ The convolution with this type of kernel is used to *blur* the input image.
 
 The pseudo-code of the convolution function is the following:
 
-![conv_seq](presentation/images/conv_seq.png)
+![conv_seq](readme_images/conv_seq.png)
 
 The image is padded by replicating the border pixels and is done by using the numpy function `pad`.
 
