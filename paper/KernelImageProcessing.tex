@@ -49,7 +49,7 @@
 
 Kernel Convolution is a basic operation used in image processing to enhance or extract useful information from an image (for example, for blurring, sharpening or perform edge detection).
 
-In general, \textit{convolution} is a mathematical operation performed on two functions $f(t)$ and $g(t)$ to produce as a result a function that expresses how the shape of $f(t)$ is altered by $h(t)$. In the continous domain, it is the integral of the product between the first and the second function translated by a certain value.
+In general, \textit{convolution} is a mathematical operation performed on two functions $f(t)$ and $g(t)$ to produce as a result a function that expresses how the shape of $f(t)$ is altered by $g(t)$. In the continous domain, it is the integral of the product between the first and the second function translated by a certain value.
 
 \[(f*g)(t) = \int_{-\infty}^{\infty}f(\tau)g(t - \tau)d\tau\]
 
@@ -61,7 +61,7 @@ where $f$ is the input image (with one channel pixels), $\omega$ is the \textit{
 
 The output $g$ of the convolution will have a smaller size than the input: if $f$ has size $W \times H$ and $\omega$ has size $n \times n$ the output will have size $(W - n + 1) \times (H - n + 1)$ because the pixels on the edges contribute less on the convolution. 
 
-To solve this problem, we need to apply a \textit{padding} to the input image borders in order to preserve the output size. There are multiple type of paddings that can be used to add these pixels: 
+To solve this problem, we need to apply a \textit{padding} to the input image borders in order to preserve the output size. There are multiple types of paddings that can be used to add these pixels: 
 
 \begin{itemize}
 	\item \textbf{Constant pixels}: a constant pre-defined value for the pixels is used (like 0).
@@ -74,9 +74,9 @@ To solve this problem, we need to apply a \textit{padding} to the input image bo
 
 The implementation is done in Python and uses the \textit{Pillow} package to load and save images in RGB format, and the \textit{numpy} package for handling arrays. 
 
-The application first loads the image and converts it into a numpy array of shape (height, width, channels).
+The application first loads the image and converts it into a numpy array of shape \verb"(height, width, channels)".
 
-After that, a gaussian kernel to use for the convolution is generated: a function that takes as parameters the width and the standard deviation, generates a matrix by using the following formula for each value.
+After that, a gaussian kernel to use for the convolution is generated. A function that takes as parameters the width and the standard deviation generates a matrix by using the following formula for each value.
 
 \[G(x, y) = \frac{1}{2\pi\sigma^2}e^{\frac{(x^2 + y^2)}{2\sigma^2}}\]
 
